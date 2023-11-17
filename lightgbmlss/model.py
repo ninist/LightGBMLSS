@@ -171,8 +171,16 @@ class LightGBMLSS:
         self.set_params(params)
         self.set_init_score(train_set)
 
+        # Set the base margin for the validation sets.
+        # self.start_values should already be initialized after the call above
+        # to self.set_init_score(train_set).
         if valid_sets is not None:
-            valid_sets = self.set_valid_margin(valid_sets, self.start_values)
+            # Avoid set_init_score calculating start_values from valid_set.
+            if self.start_values is None:
+                raise ValueError("start_values were not set/calculated from train_set yet.")
+
+            for valid_set in valid_sets:
+                self.set_init_score(valid_set)
 
         self.booster = lgb.train(params,
                                  train_set,
@@ -550,39 +558,6 @@ class LightGBMLSS:
             shap.plots.scatter(shap_values[:, feature][:, expect_pos], color=shap_values[:, feature][:, expect_pos])
         elif plot_type == "Feature_Importance":
             shap.plots.bar(shap_values[:, :, expect_pos], max_display=15 if X.shape[1] > 15 else X.shape[1])
-
-    def set_valid_margin(self,
-                         valid_sets: list,
-                         start_values: np.ndarray
-                         ) -> list:
-        """
-        Function that sets the base margin for the validation set.
-
-        Arguments
-        ---------
-        valid_sets : list
-            List of tuples containing the train and evaluation set.
-        valid_names: list
-            List of tuples containing the name of train and evaluation set.
-        start_values : np.ndarray
-            Array containing the start values for the distributional parameters.
-
-        Returns
-        -------
-        valid_sets : list
-            List of tuples containing the train and evaluation set.
-        """
-        valid_sets1 = valid_sets[0]
-        init_score_val1 = (np.ones(shape=(valid_sets1.get_label().shape[0], 1))) * start_values
-        valid_sets1.set_init_score(init_score_val1.ravel(order="F"))
-
-        valid_sets2 = valid_sets[1]
-        init_score_val2 = (np.ones(shape=(valid_sets2.get_label().shape[0], 1))) * start_values
-        valid_sets2.set_init_score(init_score_val2.ravel(order="F"))
-
-        valid_sets = [valid_sets1, valid_sets2]
-
-        return valid_sets
 
     def save_model(self,
                    model_path: str
