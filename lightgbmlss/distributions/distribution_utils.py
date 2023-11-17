@@ -400,9 +400,14 @@ class DistributionClass:
         dist_params_predt.columns = self.param_dict.keys()
 
         # Draw samples from predicted response distribution
-        pred_samples_df = self.draw_samples(predt_params=dist_params_predt,
-                                            n_samples=n_samples,
-                                            seed=seed)
+        # Only draw them in the cases where they are actually needed.
+        if pred_type == "samples" or pred_type == "quantiles":
+            pred_samples_df = self.draw_samples(
+                predt_params=dist_params_predt,
+                n_samples=n_samples,
+                seed=seed,
+            )
+
 
         if pred_type == "parameters":
             return dist_params_predt
