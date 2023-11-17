@@ -80,12 +80,14 @@ class LightGBMLSS:
         params : Dict[str, Any]
             Updated Parameters for model.
         """
-        params_adj = {"num_class": self.dist.n_dist_param,
-                      "metric": "None",
-                      "objective": self.dist.objective_fn,
-                      "random_seed": 123,
-                      "verbose": -1
-                      }
+        params_adj = {
+            "num_class": self.dist.n_dist_param,
+            "metric": "None",
+            "objective": self.dist.objective_fn,
+            "verbose": -1,
+            # We are already setting the lightgbm seed ourself, this would overwrite it.
+            #"random_seed": 123,
+        }
         params.update(params_adj)
 
         return params
