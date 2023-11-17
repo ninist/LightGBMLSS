@@ -318,6 +318,7 @@ class DistributionClass:
             DataFrame with n_samples drawn from predicted response distribution.
 
         """
+        print(f"[INFO] drawing {n_samples} samples")
         torch.manual_seed(seed)
 
         if self.tau is None:
