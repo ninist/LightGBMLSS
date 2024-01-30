@@ -17,7 +17,7 @@ setup(
     python_requires=">=3.9",
     install_requires=[
         "lightgbm~=4.1.0",
-        "torch~=2.1.1",
+        "torch~=2.1.2",
         "pyro-ppl~=1.8.6",
         "optuna~=3.4.0",
         "properscoring~=0.1",

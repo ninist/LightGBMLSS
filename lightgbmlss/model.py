@@ -84,7 +84,13 @@ class LightGBMLSS:
             "num_class": self.dist.n_dist_param,
             "metric": "None",
             "objective": self.dist.objective_fn,
-            "verbose": -1,
+            # We pass this ourselves.
+            #"verbose": -1,
+            #
+            # In case extra metrics are passed, only use the default
+            # one (self.dist.metric_fn) for early stopping.
+            "first_metric_only": True,
+            #
             # We are already setting the lightgbm seed ourself, this would overwrite it.
             #"random_seed": 123,
         }
@@ -118,9 +124,12 @@ class LightGBMLSS:
               valid_names: Optional[List[str]] = None,
               init_model: Optional[Union[str, Path, Booster]] = None,
               feature_name: _LGBM_FeatureNameConfiguration = 'auto',
+              # TODO: Throw in an extra_fevals argument and pass them as a list below
+              # early stopping then needs to use first only
               categorical_feature: _LGBM_CategoricalFeatureConfiguration = 'auto',
               keep_training_booster: bool = False,
-              callbacks: Optional[List[Callable]] = None
+              callbacks: Optional[List[Callable]] = None,
+              extra_fevals: Optional[List[Callable]] = None,
               ) -> Booster:
         """Function to perform the training of a LightGBMLSS model with given parameters.
 
@@ -182,17 +191,38 @@ class LightGBMLSS:
             for valid_set in valid_sets:
                 self.set_init_score(valid_set)
 
-        self.booster = lgb.train(params,
-                                 train_set,
-                                 num_boost_round=num_boost_round,
-                                 feval=self.dist.metric_fn,
-                                 valid_sets=valid_sets,
-                                 valid_names=valid_names,
-                                 init_model=init_model,
-                                 feature_name=feature_name,
-                                 categorical_feature=categorical_feature,
-                                 keep_training_booster=keep_training_booster,
-                                 callbacks=callbacks)
+        feval_list = [self.dist.metric_fn]
+        if extra_fevals is not None:
+            feval_list.extend(extra_fevals)
+
+        # Passing the training set as a validation set should be fine, and is
+        # useful to get training curves for both the validation set and the training set.
+        # https://github.com/microsoft/LightGBM/blob/v4.1.0/python-package/lightgbm/engine.py#L217-L218
+
+        if valid_sets is not None:
+            valid_and_train_sets = [train_set] + valid_sets
+
+        if valid_names is not None:
+            valid_and_train_names = ["train"] + valid_names
+        else:
+            valid_and_train_names = None
+
+        self.booster = lgb.train(
+            params,
+            train_set,
+            num_boost_round=num_boost_round,
+            #feval=self.dist.metric_fn,
+            feval=feval_list,
+            #valid_sets=valid_sets,
+            #valid_names=valid_names,
+            valid_sets=valid_and_train_sets,
+            valid_names=valid_and_train_names,
+            init_model=init_model,
+            feature_name=feature_name,
+            categorical_feature=categorical_feature,
+            keep_training_booster=keep_training_booster,
+            callbacks=callbacks,
+        )
 
     def cv(self,
            params: Dict[str, Any],

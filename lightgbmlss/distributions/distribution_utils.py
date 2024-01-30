@@ -207,7 +207,6 @@ class DistributionClass:
 
         # Define learning rate scheduler
         lr_scheduler = ReduceLROnPlateau(optimizer, mode="min", factor=0.5, patience=10)
-
         # Define closure
         def closure():
             optimizer.zero_grad()
